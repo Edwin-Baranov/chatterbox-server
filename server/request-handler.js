@@ -53,6 +53,7 @@ var requestHandler = function(request, response) {
 
     // See the note below about CORS headers.
     var headers = defaultCorsHeaders;
+    headers['Content-Type'] = 'text/plain';
 
     if (request.method === 'GET') {
       response.writeHead(200, headers);
@@ -70,22 +71,6 @@ var requestHandler = function(request, response) {
         response.end();
       });
     }
-    // Tell the client we are sending them plain text.
-    //
-    // You will need to change this if you are sending something
-    // other than plain text, like JSON or HTML.
-    headers['Content-Type'] = 'text/plain';
-
-    // .writeHead() writes to the request line and headers of the response,
-    // which includes the status and all headers.
-
-    // Make sure to always call response.end() - Node may not send
-    // anything back to the client until you do. The string you pass to
-    // response.end() will be the body of the response - i.e. what shows
-    // up in the browser.
-    //
-    // Calling .end "flushes" the response's internal buffer, forcing
-    // node to actually send all the data over to the client.
   } else {
     response.writeHead(404, headers);
     response.end();
