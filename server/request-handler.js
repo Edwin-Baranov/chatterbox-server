@@ -20,67 +20,62 @@ this file and include it in basic-server.js so that it actually works.
 //
 // Another way to get around this restriction is to serve you chat
 // client from this domain by setting up static file serving.
+const urlParser = require('url');
+
+
 var defaultCorsHeaders = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
-  'access-control-allow-headers': 'content-type, accept',
+  'access-control-allow-headers': 'authorization, content-type, accept',
   'access-control-max-age': 10 // Seconds.
 };
-// See the note below about CORS headers.
+
 var headers = defaultCorsHeaders;
 headers['Content-Type'] = 'application/json';
 
-var messages = [{ username: 'Jono', text: 'Do my bidding!'}];
+var messages = [];
+var resultObject = { results: messages };
 
-var requestHandler = function(request, response) {
+exports.requestHandler = function (request, response) {
+
   console.log('request made');
-  // Do some basic logging.
-  //
-  // Adding more logging to your server can be an easy way to get passive
-  // debugging help, but you should always be careful about leaving stray
-  // console.logs in your code.
+
   console.log('Serving request type ' + request.method + ' for url ' + request.url);
 
-  if (request.url === '/classes/messages') {
+  const url = urlParser.parse(request.url).pathname;
+  if (url === '/classes/messages') {
+    var result = request.url.includes('?order=-createdAt') ? messages : resultObject;
+
     console.log('Messages request made');
-    // Request and Response come from node's http module.
-    //
-    // They include information about both the incoming request, such as
-    // headers and URL, and about the outgoing response, such as its status
-    // and content.
-    //
-    // Documentation for both request and response can be found in the HTTP section at
-    // http://nodejs.org/documentation/api/
 
 
     if (request.method === 'OPTIONS') {
       response.writeHead(200, headers);
       response.end();
 
-    }
-
-    if (request.method === 'GET') {
+    } else if (request.method === 'GET') {
       response.writeHead(200, headers);
-      response.end(JSON.stringify({ results: messages}));
-    }
+      response.end(JSON.stringify(result));
 
-    if (request.method === 'POST') {
-
+    } else if (request.method === 'POST') {
       request.on('data', (data) => {
-        console.log('Incoming Data:', JSON.parse(data));
-        messages.push(JSON.parse(data));
+        var newData = JSON.parse(data);
+        newData['message_id'] = messages.length;
+        messages.push(newData);
+
       });
 
       request.on('end', () => {
         response.writeHead(201, headers);
-        response.end(JSON.stringify({ results: messages}));
+        response.end(JSON.stringify(result));
       });
+
+    } else {
+      response.writeHead(404, headers);
+      response.end();
     }
   } else {
     response.writeHead(404, headers);
     response.end();
   }
 };
-
-
-exports.requestHandler = requestHandler;
