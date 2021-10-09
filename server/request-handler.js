@@ -26,34 +26,38 @@ var defaultCorsHeaders = {
   'access-control-allow-headers': 'content-type, accept',
   'access-control-max-age': 10 // Seconds.
 };
+// See the note below about CORS headers.
+var headers = defaultCorsHeaders;
+headers['Content-Type'] = 'application/json';
 
-var messages = [];
+var messages = [{ username: 'Jono', text: 'Do my bidding!'}];
 
 var requestHandler = function(request, response) {
+  console.log('request made');
+  // Do some basic logging.
+  //
+  // Adding more logging to your server can be an easy way to get passive
+  // debugging help, but you should always be careful about leaving stray
+  // console.logs in your code.
+  console.log('Serving request type ' + request.method + ' for url ' + request.url);
+
   if (request.url === '/classes/messages') {
-  // Request and Response come from node's http module.
-  //
-  // They include information about both the incoming request, such as
-  // headers and URL, and about the outgoing response, such as its status
-  // and content.
-  //
-  // Documentation for both request and response can be found in the HTTP section at
-  // http://nodejs.org/documentation/api/
-
-    // Do some basic logging.
+    console.log('Messages request made');
+    // Request and Response come from node's http module.
     //
-    // Adding more logging to your server can be an easy way to get passive
-    // debugging help, but you should always be careful about leaving stray
-    // console.logs in your code.
-    console.log('Serving request type ' + request.method + ' for url ' + request.url);
+    // They include information about both the incoming request, such as
+    // headers and URL, and about the outgoing response, such as its status
+    // and content.
+    //
+    // Documentation for both request and response can be found in the HTTP section at
+    // http://nodejs.org/documentation/api/
 
 
-    // The outgoing status.
-    var statusCode = 200;
+    if (request.method === 'OPTIONS') {
+      response.writeHead(200, headers);
+      response.end();
 
-    // See the note below about CORS headers.
-    var headers = defaultCorsHeaders;
-    headers['Content-Type'] = 'text/plain';
+    }
 
     if (request.method === 'GET') {
       response.writeHead(200, headers);
@@ -63,12 +67,13 @@ var requestHandler = function(request, response) {
     if (request.method === 'POST') {
 
       request.on('data', (data) => {
+        console.log('Incoming Data:', JSON.parse(data));
         messages.push(JSON.parse(data));
       });
 
       request.on('end', () => {
         response.writeHead(201, headers);
-        response.end();
+        response.end(JSON.stringify({ results: messages}));
       });
     }
   } else {
